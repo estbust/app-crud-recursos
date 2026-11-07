@@ -34,3 +34,31 @@ export function getStats() {
 
   return { total, favoritos, temas };
 }
+
+// Obtiene un recurso por su id o null si no existe.
+export function getById(id) {
+  const resources = getAll();
+  return resources.find((item) => item.id === id) || null;
+}
+
+// Actualiza un recurso existente conservando su id y fechaCreacion.
+export function update(id, data) {
+  const resources = getAll();
+  const index = resources.findIndex((item) => item.id === id);
+
+  if (index === -1) {
+    return null;
+  }
+
+  const recursoActual = resources[index];
+  const updatedResource = {
+    ...recursoActual,
+    ...data,
+    id: recursoActual.id,
+    fechaCreacion: recursoActual.fechaCreacion
+  };
+
+  resources[index] = updatedResource;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(resources));
+  return updatedResource;
+}

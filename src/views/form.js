@@ -1,11 +1,21 @@
 import { TIPOS, TEMAS, NIVELES } from '../data/options.js';
-import { create } from '../services/storage.js';
+import { create, update } from '../services/storage.js';
 import { showToast } from '../components/toast.js';
 
-export function renderForm(app, resource = null) {
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+export function renderForm(app, recurso = null) {
   app.innerHTML = `
     <div class="container form-container">
-      <h1 class="form-title">Nuevo recurso</h1>
+      <h1 class="form-title">${recurso ? 'Editar recurso' : 'Nuevo recurso'}</h1>
       <div class="card">
         <form id="resource-form" class="form" novalidate>
           <div class="form-group">
@@ -16,6 +26,7 @@ export function renderForm(app, resource = null) {
               name="titulo"
               class="input"
               placeholder="Nombre del recurso"
+              value="${recurso ? escapeHtml(recurso.titulo) : ''}"
             />
           </div>
 
@@ -27,6 +38,7 @@ export function renderForm(app, resource = null) {
               name="url"
               class="input"
               placeholder="https://ejemplo.com"
+              value="${recurso ? escapeHtml(recurso.url) : ''}"
             />
           </div>
 
@@ -34,7 +46,7 @@ export function renderForm(app, resource = null) {
             <label for="tipo" class="form-label">Tipo</label>
             <select id="tipo" name="tipo" class="select">
               <option value="">Selecciona...</option>
-              ${TIPOS.map((tipo) => `<option value="${tipo.value}">${tipo.label}</option>`).join('')}
+              ${TIPOS.map((tipo) => `<option value="${tipo.value}" ${recurso?.tipo === tipo.value ? 'selected' : ''}>${tipo.label}</option>`).join('')}
             </select>
           </div>
 
@@ -42,7 +54,7 @@ export function renderForm(app, resource = null) {
             <label for="tema" class="form-label">Tema</label>
             <select id="tema" name="tema" class="select">
               <option value="">Selecciona...</option>
-              ${TEMAS.map((tema) => `<option value="${tema.value}">${tema.label}</option>`).join('')}
+              ${TEMAS.map((tema) => `<option value="${tema.value}" ${recurso?.tema === tema.value ? 'selected' : ''}>${tema.label}</option>`).join('')}
             </select>
           </div>
 
@@ -56,7 +68,7 @@ export function renderForm(app, resource = null) {
                     type="radio"
                     name="nivel"
                     value="${nivel.value}"
-                    ${nivel.value === 'basico' ? 'checked' : ''}
+                    ${(recurso?.nivel ? recurso.nivel === nivel.value : nivel.value === 'basico') ? 'checked' : ''}
                   />
                   <span>${nivel.label}</span>
                 </label>
@@ -67,14 +79,14 @@ export function renderForm(app, resource = null) {
 
           <div class="form-group">
             <label class="checkbox-label" for="favorito">
-              <input type="checkbox" name="favorito" id="favorito" />
+              <input type="checkbox" name="favorito" id="favorito" ${recurso?.favorito ? 'checked' : ''} />
               <span>Favorito</span>
             </label>
           </div>
 
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Guardar</button>
-            <a href="#/" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">${recurso ? 'Actualizar' : 'Guardar'}</button>
+            <a href="#/recursos" class="btn btn-secondary">Cancelar</a>
           </div>
         </form>
       </div>
@@ -146,16 +158,23 @@ export function renderForm(app, resource = null) {
       return;
     }
 
-    create({
+    const resourceData = {
       titulo: tituloVal,
       url: urlVal,
       tipo: data.tipo,
       tema: data.tema,
       nivel: data.nivel || 'basico',
       favorito: data.favorito
-    });
+    };
 
-    showToast('Recurso guardado');
+    if (recurso) {
+      update(recurso.id, resourceData);
+      showToast('Recurso actualizado');
+    } else {
+      create(resourceData);
+      showToast('Recurso guardado');
+    }
+
     form.reset();
     window.location.hash = '#/recursos';
   });
